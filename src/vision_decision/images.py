@@ -6,7 +6,7 @@ from PIL import Image, ImageOps
 MAX_BYTES = 20 * 1024 * 1024
 MAX_PIXELS = 20_000_000
 
-def load_image_bytes(data):
+def load_image_bytes(data, *, preserve_alpha=False):
     """Decode and validate one image already in memory (uploads, data URLs)."""
     if len(data) > MAX_BYTES:
         raise ValueError("Image exceeds 20 MiB")
@@ -21,11 +21,11 @@ def load_image_bytes(data):
             if source.width * source.height > MAX_PIXELS:
                 raise ValueError("Image exceeds 20 million decoded pixels")
             source.load()
-            image = ImageOps.exif_transpose(source).convert("RGB")
+            image = ImageOps.exif_transpose(source).convert("RGBA" if preserve_alpha else "RGB")
     return image, {"sha256": hashlib.sha256(data).hexdigest(), "width": image.width, "height": image.height, "bytes": len(data)}
 
-def load_image(path):
+def load_image(path, *, preserve_alpha=False):
     path = Path(path)
     with path.open("rb") as handle:
         data = handle.read(MAX_BYTES + 1)
-    return load_image_bytes(data)
+    return load_image_bytes(data, preserve_alpha=preserve_alpha)
